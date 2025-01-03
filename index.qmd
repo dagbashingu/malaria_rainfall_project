@@ -1,0 +1,106 @@
+---
+title: "Malaria Transmission Trend with Rainfall patterns"
+format: dashboard
+theme: superhero
+---
+
+```{python}
+import plotly.express as px
+
+p = px.line(y = [1,2,3,4])
+```
+
+```{python}
+tips = px.data.tips()
+num_cols = tips.shape[1]
+num_rows = tips.shape[0]
+```
+
+# Malaria cases
+
+## {height="20%"}
+
+::: {.valuebox title="2023 malaria Cases" color="primary" icon="heart"}
+
+
+Few columns
+:::
+::: {.valuebox title="2023 malaria incidence" color="secondary" icon="arrow-down"}
+
+
+Many rows
+:::
+::: {.valuebox title="2023 Avg malaria test positivity rate" color="#5ba3b6" icon="bar-chart"}
+1
+:::
+
+##
+
+## Row {.tabset height="70%"}
+
+### Malaria cases trend
+```{python}
+p
+```
+
+### Malaria incidence trend
+
+```{python}
+p
+```
+### Malaria test positivity trend
+
+```{python}
+p
+```
+
+# Rainfall pattern
+
+## {height="20%"}
+
+::: {.valuebox title="2023-Q1 Avg Rainfall" color="primary" icon="heart"}
+
+
+Few columns
+:::
+::: {.valuebox title="2023-Q2 Avg Rainfall" color="secondary" icon="arrow-down"}
+
+
+Many rows
+:::
+::: {.valuebox title="2023-Q3 Avg Rainfall" color="#5ba3b6" icon="bar-chart"}
+1
+:::
+
+::: {.valuebox title="2023-Q4 Avg Rainfall" color="#5ba3b6" icon="bar-chart"}
+1
+:::
+
+##
+
+```{python}
+p
+```
+
+# Malaria vs Rainfall pattern
+
+## Row {.tabset height="100%"}
+
+### Malaria cases vs Rainfall
+```{python}
+p
+```
+
+### Malaria incidence vs Rainfall
+
+```{python}
+p
+```
+
+### Malaria test positivity rate vs Rainfall
+
+```{python}
+p
+```
+
+
