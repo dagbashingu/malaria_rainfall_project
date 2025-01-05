@@ -1,7 +1,12 @@
 ---
 title: "Malaria Transmission Trend with Rainfall patterns"
-format: dashboard
+format: 
+  dashboard:
+    logo: images/mosquito.jpeg
+    nav-buttons: [linkedin, twitter, github]
 theme: superhero
+execute:
+  echo: false
 ---
 
 ```{python}
@@ -9,7 +14,8 @@ import plotly.express as px
 import pandas as pd
 import warnings
 warnings.simplefilter(action='ignore', category=pd.errors.SettingWithCopyWarning)
-import plotly.graph_objects as go
+
+import matplotlib.pyplot as plt
 
 p = px.line(y = [1,2,3,4])
 ```
@@ -37,7 +43,7 @@ fig_rain = px.line(
     benue_rainfall_data,
     x="Period",
     y="Rainfall average (mm)",  # Example: plotting value1
-    title="Test positivity rate trend",
+    title="Rain pattern",
     labels={"value1": "Value 1 (Sum)", "region": "Region"},
 )
 ```
@@ -66,12 +72,10 @@ filtered_cases = cases[
 ```
 
 ```{python}
-
-filtered_cases=(
-    filtered_cases.groupby(["State", "Period"])
+cases_LGA = (
+    filtered_cases.groupby(["LGA"])
     .agg(
-        total_cases=("malariia_cases", "sum"),
-        average_tpr=("Malaria Test Positivity Rate", "mean"),
+        total_cases=("malaria_cases", "sum")
         
     )
     .reset_index()
@@ -79,7 +83,120 @@ filtered_cases=(
 ```
 
 ```{python}
-fig = px.line(
+# Sort the data by total_cases
+cases_LGA_sorted = cases_LGA.sort_values(by="total_cases", ascending=True)
+
+# Create a bar chart
+fig_cases_lga = px.bar(
+    cases_LGA_sorted,
+    x="total_cases",
+    y="LGA",
+    title="Total Malaria Cases by LGA",
+    labels={"total_cases": "Total Cases", "LGA": "Local Government Area (LGA)"},
+    orientation="h",  # Horizontal bar chart
+)
+
+# Update layout for better readability
+fig_cases_lga.update_layout(
+    title_font_size=18,
+    xaxis_title_font_size=14,
+    yaxis_title_font_size=14,
+    template="plotly_white",
+)
+
+# Show the chart
+#fig_cases_lga.show()
+```
+
+```{python}
+total_cases = filtered_cases["malaria_cases"].sum().item()
+incidence = round(total_cases/7077181*100,1)
+
+```
+
+```{python}
+filtered_cases["quarter"] = filtered_cases['Period'].dt.quarter
+benue_rainfall_data["quarter"] = benue_rainfall_data['Period'].dt.quarter
+
+```
+
+```{python}
+quarter_rainfall = round((
+    benue_rainfall_data.groupby(["quarter"])
+    .agg(average_rainfall=("Rainfall average (mm)", "mean"))
+    .reset_index()
+),1)
+```
+
+```{python}
+q1_rain = quarter_rainfall.loc[0, "average_rainfall"].item()
+q2_rain = quarter_rainfall.loc[1, "average_rainfall"].item()
+q3_rain = quarter_rainfall.loc[2, "average_rainfall"].item()
+q4_rain = quarter_rainfall.loc[3, "average_rainfall"].item()
+
+```
+
+```{python}
+
+filtered_cases = (
+    filtered_cases.groupby(["State", "Period"])
+    .agg(
+        total_cases=("malaria_cases", "sum"),
+        average_tpr=("Malaria Test Positivity Rate", "mean"),
+    )
+    .reset_index()
+)
+```
+
+```{python}
+# Create a bar chart for Malaria Cases using Plotly Express
+fig_malaria_cases_combo = px.bar(
+    filtered_cases,
+    x="Period",
+    y="malaria_cases",
+    title="Malaria Cases and Test Positivity Rate (TPR)",
+    labels={"Month": "Month", "Malaria_Cases": "Malaria Cases"},
+    text="malaria_cases",  # Show values on bars
+)
+
+# Add a line chart for Test Positivity Rate (TPR) using Plotly Graph Objects
+fig_malaria_cases_combo.add_trace(
+    go.Scatter(
+        x=filtered_cases["Period"],
+        y=filtered_cases["Malaria Test Positivity Rate"],
+        mode="lines+markers",
+        name="Test Positivity Rate (TPR)",
+        line=dict(color="red", width=2),
+        marker=dict(size=8),
+        yaxis="y2",  # Secondary y-axis
+    )
+)
+
+# Update layout with dual y-axes
+fig_malaria_cases_combo.update_layout(
+    yaxis=dict(
+        title="Malaria Cases",
+        titlefont=dict(color="blue"),
+        tickfont=dict(color="blue"),
+    ),
+    yaxis2=dict(
+        title="Test Positivity Rate (TPR) (%)",
+        titlefont=dict(color="red"),
+        tickfont=dict(color="red"),
+        overlaying="y",
+        side="right",
+    ),
+    template="plotly_white",
+    legend=dict(x=0.1, y=1.1),  # Adjust legend position
+)
+
+# Show the chart
+fig_malaria_cases_combo.show()
+
+```
+
+```{python}
+fig_tpr = px.line(
     filtered_cases,
     x="Period",
     y="average_tpr",  # Example: plotting value1
@@ -90,60 +207,75 @@ fig = px.line(
 ```
 
 ```{python}
+fig_cases = px.line(
+    filtered_cases,
+    x="Period",
+    y="total_cases",  # Example: plotting value1
+    title="Malaria cases trend",
+    labels={"value1": "Value 1 (Sum)", "region": "Region"}
+)
+```
+
+
+```{python}
 cases_rainfall = pd.merge(filtered_cases, benue_rainfall_data, on=["State", "Period"])
 ```
 
 ```{python}
 
-# Creating a line chart using Plotly Graph Objects
-fig_cases_rainfall = go.Figure()
+fig_cases_rainfall, ax1 = plt.subplots(figsize=(10, 6))
 
-# Add rainfall data
-fig_cases_rainfall.add_trace(
-    go.Scatter(
-        x=cases_rainfall["Period"],
-        y=cases_rainfall["Rainfall average (mm)"],
-        mode="lines+markers",
-        name="Rainfall (mm)",
-        line=dict(color="blue"),
-        marker=dict(size=8),
-    )
+# Plot rainfall data
+ax1.plot(
+    cases_rainfall["Period"],
+    cases_rainfall["Rainfall average (mm)"],
+    color="blue",
+    marker="o",
+    label="Rainfall (mm)",
+    linewidth=2,
+)
+ax1.set_xlabel("Month", fontsize=12)
+ax1.set_ylabel("Rainfall (mm)", color="blue", fontsize=12)
+ax1.tick_params(axis="y", labelcolor="blue")
+ax1.grid(visible=True, which="major", linestyle="--", alpha=0.6)
+
+# Create a second y-axis for malaria cases
+ax2 = ax1.twinx()
+ax2.plot(
+    cases_rainfall["Period"],
+    cases_rainfall["total_cases"],
+    color="red",
+    marker="o",
+    linestyle="--",
+    label="Malaria Cases",
+    linewidth=2,
+)
+ax2.set_ylabel("Malaria Cases", color="red", fontsize=12)
+ax2.tick_params(axis="y", labelcolor="red")
+
+# Add a title
+plt.title(
+    "Alignment of Malaria Transmission Pattern with Rainfall", fontsize=14, pad=20
 )
 
-# Add malaria data
-fig_cases_rainfall.add_trace(
-    go.Scatter(
-        x=cases_rainfall["Period"],
-        y=cases_rainfall["total_cases"],
-        mode="lines+markers",
-        name="Malaria Cases",
-        line=dict(color="red", dash="dash"),
-        marker=dict(size=8),
-    )
+# Add legends
+fig_cases_rainfall.legend(
+    loc="upper center",
+    bbox_to_anchor=(0.5, 1.1),
+    ncol=2,
+    fontsize=12,
 )
 
-# Update layout for dual y-axes
-fig_cases_rainfall.update_layout(
-    title="Alignment of Malaria Transmission Pattern with Rainfall",
-    xaxis=dict(title="Month"),
-    yaxis=dict(
-        title="Rainfall (mm)",
-        titlefont=dict(color="blue"),
-        tickfont=dict(color="blue"),
-    ),
-    yaxis2=dict(
-        title="Malaria Cases",
-        titlefont=dict(color="red"),
-        tickfont=dict(color="red"),
-        overlaying="y",
-        side="right",
-    ),
-    legend=dict(x=0.1, y=1.2),  # Adjust legend position
-    template="plotly_white",
-)
+# Adjust layout
+plt.tight_layout()
+
+# Show the plot
+# plt.show()
 
 
 ```
+
+
 
 ```{python}
 tips = px.data.tips()
@@ -153,68 +285,64 @@ num_rows = tips.shape[0]
 
 # Malaria cases
 
-## {height="20%"}
+## {height="30%"}
 
 ::: {.valuebox title="2023 malaria Cases" color="primary" icon="heart"}
-
-
 Few columns
 :::
 ::: {.valuebox title="2023 malaria incidence" color="secondary" icon="arrow-down"}
-
-
 Many rows
 :::
 ::: {.valuebox title="2023 Avg malaria test positivity rate" color="#5ba3b6" icon="bar-chart"}
 1
 :::
 
-##
-
 ## Row {.tabset height="70%"}
 
-### Malaria cases trend
+### Malaria cases
+#### {width="50"}
 ```{python}
-p
+fig_cases
+```
+#### {width="50"}
+
+```{python}
+fig_cases_lga
 ```
 
-### Malaria incidence trend
 
-```{python}
-p
-```
 ### Malaria test positivity trend
 
 ```{python}
-fig
+fig_tpr
 ```
 
 # Rainfall pattern
 
-## {height="20%"}
+## {height="30%"}
 
-::: {.valuebox title="2023-Q1 Avg Rainfall" color="primary" icon="heart"}
+::: {.valuebox title="2023-Q1 Avg Rainfall" color="primary" icon="stars"}
 
 
-Few columns
+`{python} q1_rain`
 :::
-::: {.valuebox title="2023-Q2 Avg Rainfall" color="secondary" icon="arrow-down"}
+::: {.valuebox title="2023-Q2 Avg Rainfall" color="secondary" icon="stars"}
 
 
-Many rows
+`{python} q2_rain`
 :::
-::: {.valuebox title="2023-Q3 Avg Rainfall" color="#5ba3b6" icon="bar-chart"}
-1
+::: {.valuebox title="2023-Q3 Avg Rainfall" color="#5ba3b6" icon="stars"}
+`{python} q3_rain`
 :::
 
-::: {.valuebox title="2023-Q4 Avg Rainfall" color="#5ba3b6" icon="bar-chart"}
-1
+::: {.valuebox title="2023-Q4 Avg Rainfall" color="#5ba3b6" icon="stars"}
+`{python} q4_rain`
 :::
 
 ##
 
 ```{python}
-p
+fig_rain
 ```
 
 # Malaria vs Rainfall pattern
@@ -224,12 +352,6 @@ p
 ### Malaria cases vs Rainfall
 ```{python}
 fig_cases_rainfall
-```
-
-### Malaria incidence vs Rainfall
-
-```{python}
-p
 ```
 
 ### Malaria test positivity rate vs Rainfall

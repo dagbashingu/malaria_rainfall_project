@@ -1,4 +1,4 @@
-Country,State,LGA,Period,Persons with clinically diagnosed Malaria,Persons with confirmed uncomplicated Malaria,malariia_cases,Malaria Test Positivity Rate
+Country,State,LGA,Period,Persons with clinically diagnosed Malaria,Persons with confirmed uncomplicated Malaria,malaria_cases,Malaria Test Positivity Rate
 Nigeria,Akwa-Ibom,Abak,1/1/2020,,859,859,72.5
 Nigeria,Akwa-Ibom,Abak,2/1/2020,189,884,1073,70.9
 Nigeria,Akwa-Ibom,Abak,3/1/2020,34,838,872,70
