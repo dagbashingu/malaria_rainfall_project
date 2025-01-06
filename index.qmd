@@ -110,9 +110,9 @@ fig_cases_lga.update_layout(
 ```
 
 ```{python}
-total_cases = round(filtered_cases["malaria_cases"].sum().item(),1)
-incidence = round(total_cases/7077181*100,1)
-tpr = float(round(filtered_cases["Malaria Test Positivity Rate"].mean(),1))
+total_cases = round(filtered_cases["malaria_cases"].sum().item(), 1)
+incidence = round(total_cases / 7077181 * 1000, 1)
+tpr = float(round(filtered_cases["Malaria Test Positivity Rate"].mean(), 1))
 
 ```
 
