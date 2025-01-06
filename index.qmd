@@ -16,6 +16,7 @@ import warnings
 warnings.simplefilter(action='ignore', category=pd.errors.SettingWithCopyWarning)
 
 import matplotlib.pyplot as plt
+import itables
 
 p = px.line(y = [1,2,3,4])
 ```
@@ -109,8 +110,9 @@ fig_cases_lga.update_layout(
 ```
 
 ```{python}
-total_cases = filtered_cases["malaria_cases"].sum().item()
+total_cases = round(filtered_cases["malaria_cases"].sum().item(),1)
 incidence = round(total_cases/7077181*100,1)
+tpr = float(round(filtered_cases["Malaria Test Positivity Rate"].mean(),1))
 
 ```
 
@@ -148,52 +150,6 @@ filtered_cases = (
 )
 ```
 
-```{python}
-# Create a bar chart for Malaria Cases using Plotly Express
-fig_malaria_cases_combo = px.bar(
-    filtered_cases,
-    x="Period",
-    y="malaria_cases",
-    title="Malaria Cases and Test Positivity Rate (TPR)",
-    labels={"Month": "Month", "Malaria_Cases": "Malaria Cases"},
-    text="malaria_cases",  # Show values on bars
-)
-
-# Add a line chart for Test Positivity Rate (TPR) using Plotly Graph Objects
-fig_malaria_cases_combo.add_trace(
-    go.Scatter(
-        x=filtered_cases["Period"],
-        y=filtered_cases["Malaria Test Positivity Rate"],
-        mode="lines+markers",
-        name="Test Positivity Rate (TPR)",
-        line=dict(color="red", width=2),
-        marker=dict(size=8),
-        yaxis="y2",  # Secondary y-axis
-    )
-)
-
-# Update layout with dual y-axes
-fig_malaria_cases_combo.update_layout(
-    yaxis=dict(
-        title="Malaria Cases",
-        titlefont=dict(color="blue"),
-        tickfont=dict(color="blue"),
-    ),
-    yaxis2=dict(
-        title="Test Positivity Rate (TPR) (%)",
-        titlefont=dict(color="red"),
-        tickfont=dict(color="red"),
-        overlaying="y",
-        side="right",
-    ),
-    template="plotly_white",
-    legend=dict(x=0.1, y=1.1),  # Adjust legend position
-)
-
-# Show the chart
-fig_malaria_cases_combo.show()
-
-```
 
 ```{python}
 fig_tpr = px.line(
@@ -266,52 +222,94 @@ fig_cases_rainfall.legend(
     fontsize=12,
 )
 
-# Adjust layout
-plt.tight_layout()
 
-# Show the plot
-# plt.show()
+
+
 
 
 ```
-
-
 
 ```{python}
-tips = px.data.tips()
-num_cols = tips.shape[1]
-num_rows = tips.shape[0]
-```
+fig_tpr_rainfall, ax1 = plt.subplots(figsize=(10, 6))
 
+# Plot rainfall data
+ax1.plot(
+    cases_rainfall["Period"],
+    cases_rainfall["Rainfall average (mm)"],
+    color="blue",
+    marker="o",
+    label="Rainfall (mm)",
+    linewidth=2,
+)
+ax1.set_xlabel("Month", fontsize=12)
+ax1.set_ylabel("Rainfall (mm)", color="blue", fontsize=12)
+ax1.tick_params(axis="y", labelcolor="blue")
+ax1.grid(visible=True, which="major", linestyle="--", alpha=0.6)
+
+# Create a second y-axis for malaria cases
+ax2 = ax1.twinx()
+ax2.plot(
+    cases_rainfall["Period"],
+    cases_rainfall["average_tpr"],
+    color="red",
+    marker="o",
+    linestyle="--",
+    label="TPR",
+    linewidth=2,
+)
+ax2.set_ylabel("Test positivity rate (TPR)", color="red", fontsize=12)
+ax2.tick_params(axis="y", labelcolor="red")
+
+# Add a title
+plt.title(
+    "Alignment of Test positivity Rate with Rainfall pattern", fontsize=14, pad=20
+)
+
+# Add legends
+fig_tpr_rainfall.legend(
+    loc="upper center",
+    bbox_to_anchor=(0.5, 1.1),
+    ncol=2,
+    fontsize=12,
+)
+
+
+
+```
 # Malaria cases
 
 ## {height="30%"}
 
 ::: {.valuebox title="2023 malaria Cases" color="primary" icon="heart"}
-Few columns
+`{python} total_cases`
+
+Annual cases
 :::
 ::: {.valuebox title="2023 malaria incidence" color="secondary" icon="arrow-down"}
-Many rows
-:::
-::: {.valuebox title="2023 Avg malaria test positivity rate" color="#5ba3b6" icon="bar-chart"}
-1
+`{python} incidence`
+
+Annual malaria incidence
 :::
 
-## Row {.tabset height="70%"}
+::: {.valuebox title="2023 Avg malaria test positivity rate" color="#5ba3b6" icon="bar-chart"}
+`{python} tpr`
+
+Average test positivity rate
+:::
+
+## Row {height="60%"}
 
 ### Malaria cases
-#### {width="50"}
+#### {width="33.3}
 ```{python}
 fig_cases
 ```
-#### {width="50"}
+#### {width="33.3"}
 
 ```{python}
 fig_cases_lga
 ```
-
-
-### Malaria test positivity trend
+#### {width="33.3"}
 
 ```{python}
 fig_tpr
@@ -357,7 +355,14 @@ fig_cases_rainfall
 ### Malaria test positivity rate vs Rainfall
 
 ```{python}
-p
+fig_tpr_rainfall
 ```
-
+# Data
+```{python}
+itables.show(
+    cases_LGA,
+    caption="Malaria cases by LGAs in Benue state (2023)",
+    buttons=["csvHtml5"],
+)
+```
 
