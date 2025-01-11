@@ -5,8 +5,9 @@ format:
     logo: images/mosquito.jpeg
     nav-buttons: [linkedin, twitter, github]
 theme: superhero
-execute:
-  echo: false
+
+include : false
+
 ---
 
 ```{python}
@@ -45,8 +46,9 @@ fig_rain = px.line(
     x="Period",
     y="Rainfall average (mm)",  # Example: plotting value1
     title="Rain pattern",
-    labels={"value1": "Value 1 (Sum)", "region": "Region"},
+    labels={"value1": "Value 1 (Sum)", "region": "Region"}
 )
+
 ```
 
 
@@ -105,8 +107,7 @@ fig_cases_lga.update_layout(
     template="plotly_white",
 )
 
-# Show the chart
-#fig_cases_lga.show()
+
 ```
 
 ```{python}
@@ -157,7 +158,7 @@ fig_tpr = px.line(
     x="Period",
     y="average_tpr",  # Example: plotting value1
     title="Test positivity rate trend",
-    labels={"value1": "Value 1 (Sum)", "region": "Region"}
+    labels={"value1": "Value 1 (Sum)", "region": "Region"},
 )
 
 ```
@@ -170,6 +171,8 @@ fig_cases = px.line(
     title="Malaria cases trend",
     labels={"value1": "Value 1 (Sum)", "region": "Region"}
 )
+
+
 ```
 
 
@@ -221,12 +224,7 @@ fig_cases_rainfall.legend(
     ncol=2,
     fontsize=12,
 )
-
-
-
-
-
-
+plt.close(fig_cases_rainfall)
 ```
 
 ```{python}
@@ -272,10 +270,13 @@ fig_tpr_rainfall.legend(
     ncol=2,
     fontsize=12,
 )
+plt.close(fig_tpr_rainfall)
+```
 
-
+```{python}
 
 ```
+
 # Malaria cases
 
 ## {height="30%"}
@@ -286,7 +287,7 @@ fig_tpr_rainfall.legend(
 Annual cases
 :::
 ::: {.valuebox title="2023 malaria incidence" color="secondary" icon="arrow-down"}
-`{python} incidence`
+`{python} f"{incidence} cases per 1000"`
 
 Annual malaria incidence
 :::
@@ -340,7 +341,7 @@ fig_tpr
 ##
 
 ```{python}
-fig_rain
+fig_rain.show()
 ```
 
 # Malaria vs Rainfall pattern
@@ -349,7 +350,7 @@ fig_rain
 
 ### Malaria cases vs Rainfall
 ```{python}
-fig_cases_rainfall
+fig_cases_rainfall.show()
 ```
 
 ### Malaria test positivity rate vs Rainfall

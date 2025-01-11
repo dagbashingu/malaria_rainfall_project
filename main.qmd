@@ -1,0 +1,338 @@
+---
+title: "BENUE MALARIA | TRANSMISSION TREND WITH RAINFALL PATTERNS" 
+author: "Dagba Emmanuel Erkwagh"
+format: dashboard   
+---
+
+```{python}
+import pandas as pd
+import plotly.express as px
+import matplotlib.pyplot as plt
+import itables
+import warnings
+
+warnings.simplefilter(action="ignore", category=pd.errors.SettingWithCopyWarning)
+
+# Load the data
+cases = pd.read_csv("data/Malaria Cases.csv")  # Malaria cases
+rainfall_data = pd.read_csv("data/Rainfall_Data.csv")  # Rainfall data
+
+# Filter rainfall data for Benue values
+benue_rainfall_data = rainfall_data.query("State == 'Benue'")
+
+# Convert the rainfall data date field to a timeseries format
+benue_rainfall_data["Period"] = benue_rainfall_data["Period"] = pd.to_datetime(
+    benue_rainfall_data["Period"], format="%m/%d/%Y"
+)
+
+# Convert the malaria data date field to a timeseries format
+cases["Period"] = cases["Period"] = pd.to_datetime(cases["Period"], format="%m/%d/%Y")
+
+
+# Create the rainfall trend object
+fig_rain = px.line(
+    benue_rainfall_data,
+    x="Period",
+    y="Rainfall average (mm)",  # Example: plotting value1
+    title="Rain pattern",
+    labels={"value1": "Value 1 (Sum)", "region": "Region"},
+)
+
+# Subset the malaria cases to Benue and period, 2023
+selected_state = "Benue"
+start_date = "2023-01-01"
+end_date = "2023-12-31"
+
+# Filter for both region and date range
+filtered_cases = cases[
+    (cases["State"] == selected_state)
+    & (cases["Period"] >= start_date)
+    & (cases["Period"] <= end_date)
+]
+
+# Calculated total malaria cases by LGA
+cases_LGA = (
+    filtered_cases.groupby(["LGA"])
+    .agg(total_cases=("malaria_cases", "sum"))
+    .reset_index()
+)
+
+
+# Sort the data by total_cases
+cases_LGA_sorted = cases_LGA.sort_values(by="total_cases", ascending=True)
+
+# Create a bar chart
+fig_cases_lga = px.bar(
+    cases_LGA_sorted,
+    x="total_cases",
+    y="LGA",
+    title="Total Malaria Cases by LGA",
+    labels={"total_cases": "Total Cases", "LGA": "Local Government Area (LGA)"},
+    orientation="h",  # Horizontal bar chart
+)
+
+# Update layout for better readability
+fig_cases_lga.update_layout(
+    title_font_size=18,
+    xaxis_title_font_size=14,
+    yaxis_title_font_size=14,
+    template="plotly_white",
+)
+
+# Generate values for the value boxes on the malaria cases page
+total_cases = round(filtered_cases["malaria_cases"].sum().item(), 1)  # total cases
+incidence = round(
+    total_cases / 7077181 * 1000, 1
+)  # Malaria incidence per 1000 population
+tpr = float(
+    round(filtered_cases["Malaria Test Positivity Rate"].mean(), 1)
+)  # Malaria test positivity rate
+
+
+# create a new field called "quarter" in each dataset for aggrregation
+filtered_cases["quarter"] = filtered_cases["Period"].dt.quarter
+benue_rainfall_data["quarter"] = benue_rainfall_data["Period"].dt.quarter
+
+# Grouping rainfall values by quarter
+quarter_rainfall = round(
+    (
+        benue_rainfall_data.groupby(["quarter"])
+        .agg(average_rainfall=("Rainfall average (mm)", "mean"))
+        .reset_index()
+    ),
+    1,
+)
+
+# Generate values for the value boxes on the rainfall page
+q1_rain = quarter_rainfall.loc[0, "average_rainfall"].item()
+q2_rain = quarter_rainfall.loc[1, "average_rainfall"].item()
+q3_rain = quarter_rainfall.loc[2, "average_rainfall"].item()
+q4_rain = quarter_rainfall.loc[3, "average_rainfall"].item()
+
+# Grouping malaria cases by quarter
+filtered_cases = (
+    filtered_cases.groupby(["State", "Period"])
+    .agg(
+        total_cases=("malaria_cases", "sum"),
+        average_tpr=("Malaria Test Positivity Rate", "mean"),
+    )
+    .reset_index()
+)
+
+# Creating a trend object for test positivity rate (TPR)
+fig_tpr = px.line(
+    filtered_cases,
+    x="Period",
+    y="average_tpr",  # Example: plotting value1
+    title="Test positivity rate trend",
+    labels={"value1": "Value 1 (Sum)", "region": "Region"},
+)
+
+# Creating a trend object for malaria cases
+fig_cases = px.line(
+    filtered_cases,
+    x="Period",
+    y="total_cases",  # Example: plotting value1
+    title="Malaria cases trend",
+    labels={"value1": "Value 1 (Sum)", "region": "Region"},
+)
+
+# Merge the malaria cases and rainfall datasets
+cases_rainfall = pd.merge(filtered_cases, benue_rainfall_data, on=["State", "Period"])
+
+# Dualized plot for malaria cases and rainfall
+fig_cases_rainfall, ax1 = plt.subplots(figsize=(10, 6))
+
+# Plot rainfall data
+ax1.plot(
+    cases_rainfall["Period"],
+    cases_rainfall["Rainfall average (mm)"],
+    color="blue",
+    marker="o",
+    label="Rainfall (mm)",
+    linewidth=2,
+)
+ax1.set_xlabel("Month", fontsize=12)
+ax1.set_ylabel("Rainfall (mm)", color="blue", fontsize=12)
+ax1.tick_params(axis="y", labelcolor="blue")
+ax1.grid(visible=True, which="major", linestyle="--", alpha=0.6)
+
+# Create a second y-axis for malaria cases
+ax2 = ax1.twinx()
+ax2.plot(
+    cases_rainfall["Period"],
+    cases_rainfall["total_cases"],
+    color="red",
+    marker="o",
+    linestyle="--",
+    label="Malaria Cases",
+    linewidth=2,
+)
+ax2.set_ylabel("Malaria Cases", color="red", fontsize=12)
+ax2.tick_params(axis="y", labelcolor="red")
+
+# Add a title
+plt.title(
+    "Alignment of Malaria Transmission Pattern with Rainfall", fontsize=14, pad=20
+)
+
+# Add legends
+fig_cases_rainfall.legend(
+    loc="upper center",
+    bbox_to_anchor=(0.5, 1.1),
+    ncol=2,
+    fontsize=12,
+)
+plt.close(fig_cases_rainfall)
+
+
+# Dualized plot for TPR and rainfall
+fig_tpr_rainfall, ax1 = plt.subplots(figsize=(10, 6))
+
+# Plot rainfall data
+ax1.plot(
+    cases_rainfall["Period"],
+    cases_rainfall["Rainfall average (mm)"],
+    color="blue",
+    marker="o",
+    label="Rainfall (mm)",
+    linewidth=2,
+)
+ax1.set_xlabel("Month", fontsize=12)
+ax1.set_ylabel("Rainfall (mm)", color="blue", fontsize=12)
+ax1.tick_params(axis="y", labelcolor="blue")
+ax1.grid(visible=True, which="major", linestyle="--", alpha=0.6)
+
+# Create a second y-axis for malaria cases
+ax2 = ax1.twinx()
+ax2.plot(
+    cases_rainfall["Period"],
+    cases_rainfall["average_tpr"],
+    color="red",
+    marker="o",
+    linestyle="--",
+    label="TPR",
+    linewidth=2,
+)
+ax2.set_ylabel("Test positivity rate (TPR)", color="red", fontsize=12)
+ax2.tick_params(axis="y", labelcolor="red")
+
+# Add a title
+plt.title(
+    "Alignment of Test positivity Rate with Rainfall pattern", fontsize=14, pad=20
+)
+
+# Add legends
+fig_tpr_rainfall.legend(
+    loc="upper center",
+    bbox_to_anchor=(0.5, 1.1),
+    ncol=2,
+    fontsize=12,
+)
+plt.close(fig_tpr_rainfall)
+
+```
+
+# MALARIA CASES
+
+## Row 1 {height=30%}
+
+::: {.valuebox icon="heart" color="#1E90FF" title="2023 malaria Cases"}
+
+`{python} str(total_cases)`
+
+Annual cases
+:::
+
+::: {.valuebox icon="thermometer" color="#87CEFA" title="2023 malaria incidence/ 1000 population"} 
+
+`{python} str(incidence)`
+
+Annual incidence
+:::
+
+::: {.valuebox icon="graph-up" color="#4682B4" title="2023 Avg malaria test positivity rate"}
+
+`{python} str(tpr)`
+
+Average test positivity rate
+:::
+
+## Row 2 {height=60%}
+
+### {width=30.3%}
+
+```{python}
+fig_cases
+```
+
+### {width=30.33%}
+
+```{python}
+fig_cases_lga
+```
+### {width=30.33%}
+```{python}
+fig_tpr
+```
+
+# RAINFALL
+
+## Row 1 {height=30%}
+
+::: {.valuebox icon="heart" color="#1E90FF" title="2023-Q1 Avg Rainfall"}
+
+`{python} str(q1_rain)`
+
+Q1 rainfall
+:::
+
+::: {.valuebox icon="thermometer" color="#87CEFA" title="2023-Q2 Avg Rainfall"} 
+
+`{python} str(q2_rain)`
+
+Q2 rainfall
+:::
+
+::: {.valuebox icon="graph-up" color="#4682B4" title="2023-Q3 Avg Rainfall"}
+
+`{python} str(q3_rain)`
+
+Q3 rainfall
+:::
+
+::: {.valuebox icon="graph-up" color="#4682B4" title="2023-Q4 Avg Rainfall"}
+
+`{python} str(q4_rain)`
+
+Q4 rainfall
+:::
+
+## Row 2 {height=70%}
+
+### Malaria cases vs Rainfall
+```{python}
+fig_cases_rainfall
+```
+
+### Malaria test positivity rate vs Rainfall
+
+```{python}
+fig_tpr_rainfall
+```
+# DATA DOWNLOAD
+
+```{python}
+# Display full dataset with itables
+itables.show(
+    cases_LGA,
+    caption="Malaria cases by LGAs in Benue state (2023)",
+    buttons=["csvHtml5"],
+)
+```
+
+# ABOUT
+
+This data is sourced from the Nigeria routine Health Management Information System. It covers malaria cases and rainfall data.
+
+The Dashboard seeks to demonstrates that malaria transmission follows a similar pattern as rainfall.
